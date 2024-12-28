@@ -2,7 +2,7 @@ import { getAllInvoices } from "@/lib/google-sheets";
 import { TimeTrackingForm } from "@/components/time-tracking-form";
 import { TimeLogList } from "@/components/time-log-list";
 import { SyncButton } from "@/components/sync-button";
-import { logTime, syncHours, getRecentLogs, deleteTimeLog, updateTimeLog } from "./actions";
+import { logTime, syncHours, getRecentLogs, deleteTimeLog, updateTimeLog, updateTimeLogRate } from "./actions";
 
 export default async function TimeTrackingPage() {
   const [invoices, recentLogs] = await Promise.all([
@@ -40,6 +40,7 @@ export default async function TimeTrackingPage() {
         logs={recentLogs}
         onDelete={deleteTimeLog}
         onEdit={updateTimeLog}
+        onUpdateRate={updateTimeLogRate}
       />
     </div>
   );

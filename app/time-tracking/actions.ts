@@ -95,4 +95,23 @@ export async function updateTimeLog(log: TimeLog) {
   
   // Sync with Google Sheets after update
   await syncHours();
+}
+
+export async function updateTimeLogRate(
+  id: string, 
+  data: { rate: number; rateType: string }
+) {
+  const client = await clientPromise;
+  const timeLogs = client.db().collection<TimeLog>('time_logs');
+  
+  await timeLogs.updateOne(
+    { _id: new ObjectId(id) },
+    { 
+      $set: { 
+        rate: data.rate,
+        rateType: data.rateType,
+        updatedAt: new Date() 
+      } 
+    }
+  );
 } 
