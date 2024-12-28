@@ -3,7 +3,7 @@ Use this guide to build a web app that allows me to manage the backend of my web
 
 # Feature Requirements
 - The web app will be hosted at admin.dev.geoffvrijmoet.com.
-- The web app should connect to Google Sheets and we will use one main sheet (its ID is KQuMYcmJz41S22PWmQvMG19N5la8KeZXOvbgo8kdLmQ) for keeping track of data such as how many hours I've worked on a project, how much has been invoiced for a project, how much has been paid for a project, etc.
+- The web app should connect to Google Sheets and we will use one main sheet (its ID is 1KQuMYcmJz41S22PWmQvMG19N5la8KeZXOvbgo8kdLmQ) for keeping track of data such as how many hours I've worked on a project, how much has been invoiced for a project, how much has been paid for a project, etc.
 - The web app should connect to Stripe and we will use one main account for keeping track of data such as how much has been invoiced for a project, how much has been paid for a project, etc.
 - The web app should have lightning-fast performance.
 - The entire app should be extremely mobile-friendly.
