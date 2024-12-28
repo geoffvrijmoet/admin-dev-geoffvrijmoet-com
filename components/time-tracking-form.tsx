@@ -6,8 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Clock, Play, Square } from "lucide-react";
 
+interface Project {
+  name: string;
+  client: string;
+}
+
 interface TimeTrackingFormProps {
-  projects: string[];
+  projects: Project[];
   onLogTime: (data: { 
     project: string; 
     hours: number;
@@ -137,32 +142,28 @@ export function TimeTrackingForm({ projects, onLogTime }: TimeTrackingFormProps)
 
   return (
     <div className="space-y-4 p-4 border rounded-lg">
-      <div className="flex items-center gap-4">
+      <div className="space-y-2">
         <Select value={selectedProject} onValueChange={setSelectedProject}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-[300px]">
             <SelectValue placeholder="Select project" />
           </SelectTrigger>
           <SelectContent>
             {projects.map((project) => (
-              <SelectItem key={project} value={project}>
-                {project}
+              <SelectItem key={project.name} value={project.name}>
+                <div className="flex flex-col">
+                  <span>{project.name}</span>
+                  <span className="text-xs text-muted-foreground">{project.client}</span>
+                </div>
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
 
-        <Input
-          placeholder="What are you working on?"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="flex-1"
-        />
-
         {isTracking ? (
           <Button 
             variant="destructive" 
             onClick={stopTracking}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 w-[200px]"
           >
             <Square className="h-4 w-4" />
             Stop Tracking
@@ -171,13 +172,20 @@ export function TimeTrackingForm({ projects, onLogTime }: TimeTrackingFormProps)
           <Button 
             onClick={startTracking} 
             disabled={!selectedProject}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 w-[200px]"
           >
             <Play className="h-4 w-4" />
             Start Tracking
           </Button>
         )}
       </div>
+
+      <Input
+        placeholder="What are you working on?"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        className="flex-1"
+      />
 
       {isTracking && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">

@@ -10,7 +10,14 @@ export default async function TimeTrackingPage() {
     getRecentLogs()
   ]);
   
-  const projects = Array.from(new Set(invoices.map(inv => inv.project)));
+  const projects = Array.from(
+    new Set(
+      invoices.map(inv => ({
+        name: inv.project,
+        client: inv.client
+      }))
+    )
+  );
 
   return (
     <div className="space-y-8">
