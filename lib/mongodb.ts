@@ -5,9 +5,13 @@ if (!process.env.MONGODB_URI) {
 }
 
 const uri = process.env.MONGODB_URI;
-const options = {};
+const options = {
+  maxPoolSize: 10,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+};
 
-let client;
+let client: MongoClient | undefined;
 let clientPromise: Promise<MongoClient>;
 
 if (process.env.NODE_ENV === 'development') {
@@ -23,9 +27,26 @@ if (process.env.NODE_ENV === 'development') {
   }
   clientPromise = globalWithMongo._mongoClientPromise;
 } else {
-  // In production mode, it's best to not use a global variable.
+  // In production mode, create a new client for each connection
   client = new MongoClient(uri, options);
   clientPromise = client.connect();
 }
 
-export default clientPromise; 
+// Add error handling
+clientPromise.catch(error => {
+  console.error('MongoDB connection error:', error);
+  throw error;
+});
+
+export default clientPromise;
+
+// Add a helper function to safely get a database connection
+export async function getDb() {
+  try {
+    const client = await clientPromise;
+    return client.db();
+  } catch (error) {
+    console.error('Failed to get database connection:', error);
+    throw error;
+  }
+} 

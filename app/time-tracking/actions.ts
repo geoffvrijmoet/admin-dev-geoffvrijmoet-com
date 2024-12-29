@@ -31,14 +31,25 @@ export async function logTime(data: {
 }
 
 export async function getRecentLogs() {
-  const client = await clientPromise;
-  const timeLogs = client.db().collection<TimeLog>('time_logs');
-  
-  return timeLogs
-    .find({})
-    .sort({ startTime: -1 })
-    .limit(10)
-    .toArray();
+  try {
+    const client = await clientPromise;
+    const timeLogs = client.db().collection<TimeLog>('time_logs');
+    
+    console.log('Fetching recent logs...');
+    
+    const logs = await timeLogs
+      .find({})
+      .sort({ startTime: -1 })
+      .limit(10)
+      .toArray();
+      
+    console.log('Found logs:', logs.length);
+    
+    return logs;
+  } catch (error) {
+    console.error('Failed to fetch recent logs:', error);
+    throw error;
+  }
 }
 
 export async function deleteTimeLog(id: string) {
