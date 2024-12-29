@@ -29,6 +29,41 @@ export function InvoiceList() {
     fetchInvoices();
   }, []);
 
+  const handleDownload = async (invoiceId: string) => {
+    try {
+      console.log('Downloading invoice:', invoiceId);
+      const response = await fetch(`/api/invoices/${invoiceId}/download`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Download failed:', errorData);
+        throw new Error('Failed to download invoice');
+      }
+
+      const contentType = response.headers.get('Content-Type');
+      console.log('Response content type:', contentType);
+
+      const blob = await response.blob();
+      console.log('Blob size:', blob.size);
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoice-${invoiceId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Cleanup
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }, 0);
+    } catch (error) {
+      console.error('Error downloading invoice:', error);
+      // You might want to show an error toast here
+    }
+  };
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -79,7 +114,11 @@ export function InvoiceList() {
                       <Button variant="ghost" size="sm">
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleDownload(invoice._id!.toString())}
+                      >
                         <Download className="h-4 w-4" />
                       </Button>
                     </div>

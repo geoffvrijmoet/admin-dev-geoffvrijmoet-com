@@ -1,10 +1,11 @@
-import { TimeLog } from "@/lib/time-logs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, DollarSign, FileText, Wallet, TrendingUp } from "lucide-react";
 import { getProjectStats } from "@/lib/time-logs";
-import { getRecentLogs, updateTimeLog } from "@/app/time-tracking/actions";
-import { RecentTimeLogs } from "@/components/recent-time-logs";
+import { getRecentLogs } from "@/app/time-tracking/actions";
+import { getInvoices } from "@/lib/invoices";
 import { AddProjectButton } from "@/components/add-project-button";
+import { TimeLog } from "@/lib/time-logs";
+import { RecentTimeLogs } from "@/components/recent-time-logs";
 
 function formatDuration(hours: number) {
   const totalSeconds = Math.floor(hours * 3600);
@@ -22,7 +23,7 @@ function formatDuration(hours: number) {
 
 function groupLogsByProject(logs: TimeLog[]) {
   const grouped = logs.reduce((acc, log) => {
-    const key = `${log.client}|||${log.project}`; // Using ||| as delimiter
+    const key = `${log.client}|||${log.project}`;
     if (!acc[key]) {
       acc[key] = {
         client: log.client,
@@ -49,14 +50,13 @@ function groupLogsByProject(logs: TimeLog[]) {
 
 export default async function DashboardPage() {
   try {
-    const [stats, recentLogs] = await Promise.all([
+    const [stats, recentLogs, invoices] = await Promise.all([
       getProjectStats(),
-      getRecentLogs()
+      getRecentLogs(),
+      getInvoices()
     ]);
 
-    const totalPotentialInvoice = stats.reduce((sum, stat) => sum + stat.potentialInvoice, 0);
-    const averageRate = stats.reduce((sum, stat) => sum + stat.averageRate, 0) / stats.length;
-
+    // Monthly calculations
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
     
@@ -66,6 +66,24 @@ export default async function DashboardPage() {
     });
 
     const monthlyHours = monthlyLogs.reduce((sum, log) => sum + log.hours, 0);
+    const monthlyRevenue = Number(monthlyLogs
+      .reduce((sum, log) => sum + (log.hours * log.rate), 0)
+      .toFixed(2));
+
+    // Invoice calculations
+    const totalInvoiced = Number(invoices
+      .reduce((sum, inv) => sum + inv.total, 0)
+      .toFixed(2));
+    const totalPaid = Number(invoices
+      .filter(inv => inv.status === 'paid')
+      .reduce((sum, inv) => sum + inv.total, 0)
+      .toFixed(2));
+    const totalOutstanding = Number((totalInvoiced - totalPaid).toFixed(2));
+
+    // Average rate calculation
+    const averageRate = Number((stats.length > 0
+      ? stats.reduce((sum, stat) => sum + stat.averageRate, 0) / stats.length
+      : 0).toFixed(2));
 
     return (
       <div className="space-y-8">
@@ -99,9 +117,9 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ${totalPotentialInvoice.toLocaleString()}
+                ${monthlyRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
-              <p className="text-xs text-muted-foreground">Potential revenue this month</p>
+              <p className="text-xs text-muted-foreground">Revenue this month</p>
             </CardContent>
           </Card>
 
@@ -112,7 +130,7 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ${averageRate.toLocaleString()}/hr
+                ${averageRate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/hr
               </div>
               <p className="text-xs text-muted-foreground">Average hourly rate</p>
             </CardContent>
@@ -125,9 +143,9 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ${totalPotentialInvoice.toLocaleString()}
+                ${totalPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
-              <p className="text-xs text-muted-foreground">Total potential revenue</p>
+              <p className="text-xs text-muted-foreground">Total received</p>
             </CardContent>
           </Card>
 
@@ -138,7 +156,7 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ${(totalPotentialInvoice - totalPotentialInvoice).toLocaleString()}
+                ${totalOutstanding.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
               <p className="text-xs text-muted-foreground">Amount pending</p>
             </CardContent>
@@ -183,20 +201,20 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentLogs.slice(0, 5).map((log, i) => (
-                  <div key={i} className="flex items-center justify-between">
+                {invoices.slice(0, 5).map((invoice) => (
+                  <div key={invoice._id?.toString()} className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium">{log.project}</p>
+                      <p className="text-sm font-medium">{invoice.client}</p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(log.startTime).toLocaleDateString()}
+                        {new Date(invoice.date).toLocaleDateString()}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-medium">
-                        ${(log.potentialInvoice ?? 0).toLocaleString()}
+                        ${invoice.total.toLocaleString()}
                       </p>
-                      <p className={`text-xs ${log.datePaid ? 'text-green-500' : 'text-orange-500'}`}>
-                        {log.datePaid ? 'Paid' : 'Pending'}
+                      <p className={`text-xs ${invoice.status === 'paid' ? 'text-green-500' : 'text-orange-500'}`}>
+                        {invoice.status}
                       </p>
                     </div>
                   </div>
@@ -206,10 +224,20 @@ export default async function DashboardPage() {
           </Card>
         </div>
 
-        <RecentTimeLogs 
-          logs={recentLogs} 
-          onEdit={updateTimeLog}
-        />
+        {/* Add Recent Timelogs section */}
+        <div>
+          <RecentTimeLogs 
+            logs={recentLogs} 
+            onEdit={async (log) => {
+              'use server';
+              const response = await fetch('/api/time-logs/' + log._id, {
+                method: 'PATCH',
+                body: JSON.stringify(log)
+              });
+              if (!response.ok) throw new Error('Failed to update time log');
+            }}
+          />
+        </div>
       </div>
     );
   } catch (error) {
