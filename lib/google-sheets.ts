@@ -1,10 +1,23 @@
 import { google } from 'googleapis';
 import { JWT } from 'google-auth-library';
+let credentials;
+let GOOGLE_PRIVATE_KEY;
+let GOOGLE_CLIENT_EMAIL;
+if (process.env.BASE64_ENCODED_SERVICE_ACCOUNT) {
+  const base64EncodedServiceAccount = process.env.BASE64_ENCODED_SERVICE_ACCOUNT;
+  const decodedServiceAccount = Buffer.from(base64EncodedServiceAccount, 'base64').toString('utf-8');
+  credentials = JSON.parse(decodedServiceAccount);
+  GOOGLE_PRIVATE_KEY = credentials.private_key.split(String.raw`\n`).join('\n');
+  GOOGLE_CLIENT_EMAIL = credentials.client_email;
+}
+if (!GOOGLE_PRIVATE_KEY) if (process.env.GOOGLE_PRIVATE_KEY) GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY.split(String.raw`\n`).join('\n');
 
-const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY
-  ? process.env.GOOGLE_PRIVATE_KEY.split(String.raw`\n`).join('\n')
-  : undefined;
-const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL;
+if (!GOOGLE_CLIENT_EMAIL) if (process.env.GOOGLE_CLIENT_EMAIL) GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL;
+
+// const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY
+//   ? process.env.GOOGLE_PRIVATE_KEY.split(String.raw`\n`).join('\n')
+//   : credentials.private_key.split(String.raw`\n`).join('\n');
+// const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL;
 const GOOGLE_SHEET_ID = process.env.GOOGLE_SHEET_ID;
 
 if (!GOOGLE_PRIVATE_KEY || !GOOGLE_CLIENT_EMAIL || !GOOGLE_SHEET_ID) {
