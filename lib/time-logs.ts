@@ -4,6 +4,7 @@ import { ObjectId } from 'mongodb';
 export interface TimeLog {
   _id?: ObjectId;
   project: string;
+  client: string;
   startTime: Date;
   endTime: Date;
   hours: number;
@@ -13,6 +14,8 @@ export interface TimeLog {
   updatedAt: Date;
   rate: number;
   rateType: string;
+  potentialInvoice?: number;
+  datePaid?: Date;
 }
 
 export async function addTimeLog(timeLog: Omit<TimeLog, '_id' | 'invoiced' | 'createdAt' | 'updatedAt'>) {

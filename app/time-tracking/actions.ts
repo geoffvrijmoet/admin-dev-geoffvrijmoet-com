@@ -1,7 +1,6 @@
 'use server'
 
-import { addTimeLog, getProjectStats, TimeLog } from '@/lib/time-logs';
-import { getAllInvoices, updateProjectHours } from '@/lib/google-sheets';
+import { addTimeLog, TimeLog } from '@/lib/time-logs';
 import clientPromise from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
@@ -13,9 +12,9 @@ export async function logTime(data: {
   description?: string;
 }) {
   try {
-    // First, save to MongoDB
     const timeLogResult = await addTimeLog({
       project: data.project,
+      client: data.project.split(' - ')[0],
       startTime: new Date(data.startTime),
       endTime: new Date(data.endTime),
       hours: data.hours,
@@ -23,50 +22,11 @@ export async function logTime(data: {
       rate: 0,
       rateType: 'hourly'
     });
-
-    // Then, update Google Sheets
-    const invoices = await getAllInvoices();
-    const projectRow = invoices.find(inv => inv.project === data.project);
-    
-    if (projectRow) {
-      await updateProjectHours(
-        data.project, 
-        projectRow.hoursWorked + data.hours,
-        projectRow.rate || 0,
-        Number(((projectRow.hoursWorked + data.hours) * (projectRow.rate || 0)).toFixed(2))
-      );
-    }
     
     return { success: true, data: timeLogResult };
   } catch (error) {
     console.error('Failed to log time:', error);
     throw new Error(error instanceof Error ? error.message : 'Failed to log time');
-  }
-}
-
-export async function syncHours() {
-  try {
-    const [mongoStats, invoices] = await Promise.all([
-      getProjectStats(),
-      getAllInvoices()
-    ]);
-
-    for (const projectStats of mongoStats) {
-      const projectRow = invoices.find(inv => inv.project === projectStats.project);
-      if (projectRow) {
-        await updateProjectHours(
-          projectStats.project, 
-          projectStats.hours,
-          projectStats.averageRate,
-          projectStats.potentialInvoice
-        );
-      }
-    }
-
-    return { success: true };
-  } catch (error) {
-    console.error('Failed to sync hours:', error);
-    throw new Error(error instanceof Error ? error.message : 'Failed to sync hours');
   }
 }
 
@@ -86,9 +46,6 @@ export async function deleteTimeLog(id: string) {
   const timeLogs = client.db().collection<TimeLog>('time_logs');
   
   await timeLogs.deleteOne({ _id: new ObjectId(id) });
-  
-  // Sync with Google Sheets after deletion
-  await syncHours();
 }
 
 export async function updateTimeLog(log: TimeLog) {
@@ -99,14 +56,14 @@ export async function updateTimeLog(log: TimeLog) {
     { _id: new ObjectId(log._id) },
     { 
       $set: { 
-        ...log,
+        client: log.client,
+        project: log.project,
+        rate: log.rate,
+        hours: log.hours,
         updatedAt: new Date() 
       } 
     }
   );
-  
-  // Sync with Google Sheets after update
-  await syncHours();
 }
 
 export async function updateTimeLogRate(

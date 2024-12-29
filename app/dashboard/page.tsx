@@ -1,13 +1,70 @@
+import { TimeLog } from "@/lib/time-logs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, DollarSign, FileText, Wallet, TrendingUp } from "lucide-react";
-import { getDashboardStats, getAllInvoices } from "@/lib/google-sheets";
+import { getProjectStats } from "@/lib/time-logs";
+import { getRecentLogs, updateTimeLog } from "@/app/time-tracking/actions";
+import { RecentTimeLogs } from "@/components/recent-time-logs";
+
+function formatDuration(hours: number) {
+  const totalSeconds = Math.floor(hours * 3600);
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+
+  const parts = [];
+  if (h > 0) parts.push(`${h}h`);
+  if (m > 0) parts.push(`${m}m`);
+  if (s > 0) parts.push(`${s}s`);
+  
+  return parts.join(' ') || '0s';
+}
+
+function groupLogsByProject(logs: TimeLog[]) {
+  const grouped = logs.reduce((acc, log) => {
+    const key = `${log.client}|||${log.project}`; // Using ||| as delimiter
+    if (!acc[key]) {
+      acc[key] = {
+        client: log.client,
+        project: log.project,
+        hours: 0,
+        rate: log.rate,
+        rateType: log.rateType
+      };
+    }
+    acc[key].hours += log.hours;
+    return acc;
+  }, {} as Record<string, {
+    client: string;
+    project: string;
+    hours: number;
+    rate: number;
+    rateType: string;
+  }>);
+
+  return Object.values(grouped)
+    .sort((a, b) => b.hours - a.hours)
+    .slice(0, 5);
+}
 
 export default async function DashboardPage() {
   try {
-    const [stats, invoices] = await Promise.all([
-      getDashboardStats(),
-      getAllInvoices(),
+    const [stats, recentLogs] = await Promise.all([
+      getProjectStats(),
+      getRecentLogs()
     ]);
+
+    const totalPotentialInvoice = stats.reduce((sum, stat) => sum + stat.potentialInvoice, 0);
+    const averageRate = stats.reduce((sum, stat) => sum + stat.averageRate, 0) / stats.length;
+
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    
+    const monthlyLogs = recentLogs.filter(log => {
+      const logDate = new Date(log.startTime);
+      return logDate.getMonth() === currentMonth && logDate.getFullYear() === currentYear;
+    });
+
+    const monthlyHours = monthlyLogs.reduce((sum, log) => sum + log.hours, 0);
 
     return (
       <div className="space-y-8">
@@ -26,7 +83,7 @@ export default async function DashboardPage() {
               <Clock className="h-4 w-4 text-sky-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.monthlyStats.hours.toFixed(1)}</div>
+              <div className="text-2xl font-bold">{monthlyHours.toFixed(1)}</div>
               <p className="text-xs text-muted-foreground">Hours this month</p>
             </CardContent>
           </Card>
@@ -38,9 +95,9 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ${stats.monthlyStats.invoiced.toLocaleString()}
+                ${totalPotentialInvoice.toLocaleString()}
               </div>
-              <p className="text-xs text-muted-foreground">Invoiced this month</p>
+              <p className="text-xs text-muted-foreground">Potential revenue this month</p>
             </CardContent>
           </Card>
 
@@ -51,7 +108,7 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ${stats.averageHourlyRate.toLocaleString()}/hr
+                ${averageRate.toLocaleString()}/hr
               </div>
               <p className="text-xs text-muted-foreground">Average hourly rate</p>
             </CardContent>
@@ -64,9 +121,9 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ${stats.totalPaid.toLocaleString()}
+                ${totalPotentialInvoice.toLocaleString()}
               </div>
-              <p className="text-xs text-muted-foreground">Total received</p>
+              <p className="text-xs text-muted-foreground">Total potential revenue</p>
             </CardContent>
           </Card>
 
@@ -77,7 +134,7 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ${(stats.totalInvoiced - stats.totalPaid).toLocaleString()}
+                ${(totalPotentialInvoice - totalPotentialInvoice).toLocaleString()}
               </div>
               <p className="text-xs text-muted-foreground">Amount pending</p>
             </CardContent>
@@ -92,20 +149,22 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {invoices.slice(0, 5).map((invoice, i) => (
+                {groupLogsByProject(recentLogs).map((project, i) => (
                   <div key={i} className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium">{invoice.project}</p>
+                      <p className="text-sm font-medium">
+                        {project.project} • {project.client}
+                      </p>
                       <p className="text-xs text-muted-foreground">
-                        {invoice.client} • {invoice.rateType}
+                        {project.rateType}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-medium">
-                        {invoice.hoursWorked} hrs
+                        {project.hours.toFixed(2)} hrs ({formatDuration(project.hours)})
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        ${invoice.rate}/hr
+                        ${project.rate}/hr
                       </p>
                     </div>
                   </div>
@@ -120,20 +179,20 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {invoices.slice(0, 5).map((invoice, i) => (
+                {recentLogs.slice(0, 5).map((log, i) => (
                   <div key={i} className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium">{invoice.project}</p>
+                      <p className="text-sm font-medium">{log.project}</p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(invoice.dateInvoiced).toLocaleDateString()}
+                        {new Date(log.startTime).toLocaleDateString()}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-medium">
-                        ${invoice.invoiced.toLocaleString()}
+                        ${(log.potentialInvoice ?? 0).toLocaleString()}
                       </p>
-                      <p className={`text-xs ${invoice.datePaid ? 'text-green-500' : 'text-orange-500'}`}>
-                        {invoice.datePaid ? 'Paid' : 'Pending'}
+                      <p className={`text-xs ${log.datePaid ? 'text-green-500' : 'text-orange-500'}`}>
+                        {log.datePaid ? 'Paid' : 'Pending'}
                       </p>
                     </div>
                   </div>
@@ -142,23 +201,19 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+
+        <RecentTimeLogs 
+          logs={recentLogs} 
+          onEdit={updateTimeLog}
+        />
       </div>
     );
-  } catch (err: unknown) {
-    const error = err as Error;
+  } catch (error) {
     return (
       <div className="p-8">
         <h2 className="text-3xl font-bold tracking-tight text-red-500">Error Loading Dashboard</h2>
         <p className="text-muted-foreground mt-2">
-          {error.message}
-        </p>
-        <p className="text-sm text-muted-foreground mt-4">
-          Please make sure:
-          <ul className="list-disc list-inside mt-2">
-            <li>The Google Sheet exists and is accessible</li>
-            <li>The service account has been granted access to the sheet</li>
-            <li>The environment variables are correctly configured</li>
-          </ul>
+          {error instanceof Error ? error.message : 'An error occurred'}
         </p>
       </div>
     );

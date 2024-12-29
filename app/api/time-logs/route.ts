@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
 
     const result = await addTimeLog({
       project: body.project,
+      client: body.client,
       startTime: new Date(body.startTime),
       endTime: new Date(body.endTime),
       hours: body.hours,
