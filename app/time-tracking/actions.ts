@@ -1,6 +1,6 @@
 'use server'
 
-import { addTimeLog, getProjectTotalHours, TimeLog } from '@/lib/time-logs';
+import { addTimeLog, getProjectStats, TimeLog } from '@/lib/time-logs';
 import { getAllInvoices, updateProjectHours } from '@/lib/google-sheets';
 import clientPromise from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
@@ -20,6 +20,8 @@ export async function logTime(data: {
       endTime: new Date(data.endTime),
       hours: data.hours,
       description: data.description,
+      rate: 0,
+      rateType: 'hourly'
     });
 
     // Then, update Google Sheets
@@ -27,7 +29,12 @@ export async function logTime(data: {
     const projectRow = invoices.find(inv => inv.project === data.project);
     
     if (projectRow) {
-      await updateProjectHours(data.project, projectRow.hoursWorked + data.hours);
+      await updateProjectHours(
+        data.project, 
+        projectRow.hoursWorked + data.hours,
+        projectRow.rate || 0,
+        Number(((projectRow.hoursWorked + data.hours) * (projectRow.rate || 0)).toFixed(2))
+      );
     }
     
     return { success: true, data: timeLogResult };
@@ -39,15 +46,20 @@ export async function logTime(data: {
 
 export async function syncHours() {
   try {
-    const [mongoHours, invoices] = await Promise.all([
-      getProjectTotalHours(),
+    const [mongoStats, invoices] = await Promise.all([
+      getProjectStats(),
       getAllInvoices()
     ]);
 
-    for (const projectHours of mongoHours) {
-      const projectRow = invoices.find(inv => inv.project === projectHours.project);
+    for (const projectStats of mongoStats) {
+      const projectRow = invoices.find(inv => inv.project === projectStats.project);
       if (projectRow) {
-        await updateProjectHours(projectHours.project, projectHours.hours);
+        await updateProjectHours(
+          projectStats.project, 
+          projectStats.hours,
+          projectStats.averageRate,
+          projectStats.potentialInvoice
+        );
       }
     }
 

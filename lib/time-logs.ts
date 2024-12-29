@@ -11,6 +11,8 @@ export interface TimeLog {
   invoiced: boolean;
   createdAt: Date;
   updatedAt: Date;
+  rate: number;
+  rateType: string;
 }
 
 export async function addTimeLog(timeLog: Omit<TimeLog, '_id' | 'invoiced' | 'createdAt' | 'updatedAt'>) {
@@ -77,5 +79,51 @@ export async function getProjectTotalHours() {
   return result.map(item => ({
     project: item._id,
     hours: item.totalHours
+  }));
+}
+
+export async function getProjectAverageRates() {
+  const client = await clientPromise;
+  const timeLogs = client.db().collection<TimeLog>('time_logs');
+  
+  const result = await timeLogs.aggregate([
+    {
+      $group: {
+        _id: "$project",
+        totalHours: { $sum: "$hours" },
+        avgRate: { $avg: "$rate" }
+      }
+    }
+  ]).toArray();
+
+  return result.map(item => ({
+    project: item._id,
+    hours: item.totalHours,
+    averageRate: item.avgRate || 0
+  }));
+}
+
+export async function getProjectStats() {
+  const client = await clientPromise;
+  const timeLogs = client.db().collection<TimeLog>('time_logs');
+  
+  const result = await timeLogs.aggregate([
+    {
+      $group: {
+        _id: "$project",
+        totalHours: { $sum: "$hours" },
+        avgRate: { $avg: "$rate" },
+        potentialInvoice: {
+          $sum: { $multiply: ["$hours", "$rate"] }
+        }
+      }
+    }
+  ]).toArray();
+
+  return result.map(item => ({
+    project: item._id,
+    hours: item.totalHours,
+    averageRate: item.avgRate || 0,
+    potentialInvoice: item.potentialInvoice || 0
   }));
 } 

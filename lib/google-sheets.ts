@@ -273,29 +273,28 @@ export async function addTimeEntry(project: string, hours: number, date: string)
   });
 }
 
-export async function updateProjectHours(project: string, newHours: number) {
+export async function updateProjectHours(
+  project: string, 
+  newHours: number, 
+  averageRate: number,
+  potentialInvoice: number
+) {
   const columnMap = await getColumnMap();
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: GOOGLE_SHEET_ID,
-    range: 'Sheet1', // Get all data to find the row
+    range: 'Sheet1',
   });
 
   if (!response.data.values) {
     throw new Error('No data found in spreadsheet');
   }
 
-  // Find the row with the matching project
   const rowIndex = response.data.values.findIndex(row => row[columnMap.project] === project);
   
   if (rowIndex === -1) {
     throw new Error('Project not found in spreadsheet');
   }
 
-  const row = response.data.values[rowIndex];
-  const invoiced = parseFloat((row[columnMap.invoiced] || '').replace(/[^0-9.-]+/g, '')) || 0;
-  const newHourlyRate = newHours > 0 ? invoiced / newHours : 0;
-
-  // Update both hours and hourly rate
   await sheets.spreadsheets.values.batchUpdate({
     spreadsheetId: GOOGLE_SHEET_ID,
     requestBody: {
@@ -306,8 +305,12 @@ export async function updateProjectHours(project: string, newHours: number) {
           values: [[newHours.toString()]]
         },
         {
-          range: `Sheet1!${String.fromCharCode(65 + 9)}${rowIndex + 1}`, // Column J is Running hourly rate
-          values: [[newHourlyRate.toString()]]
+          range: `Sheet1!${String.fromCharCode(65 + columnMap.rate)}${rowIndex + 1}`,
+          values: [[averageRate.toString()]]
+        },
+        {
+          range: `Sheet1!${String.fromCharCode(65 + columnMap.invoiced)}${rowIndex + 1}`,
+          values: [[potentialInvoice.toFixed(2)]]
         }
       ]
     }

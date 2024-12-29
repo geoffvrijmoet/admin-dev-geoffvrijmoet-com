@@ -20,6 +20,8 @@ export async function POST(request: NextRequest) {
       endTime: new Date(body.endTime),
       hours: body.hours,
       description: body.description,
+      rate: 0,
+      rateType: 'hourly'
     });
     
     console.log('Time log saved:', result);
