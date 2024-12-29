@@ -5,7 +5,7 @@ import { getRecentLogs } from "@/app/time-tracking/actions";
 import { getInvoices } from "@/lib/invoices";
 import { AddProjectButton } from "@/components/add-project-button";
 import { TimeLog } from "@/lib/time-logs";
-import { RecentTimeLogs } from "@/components/recent-time-logs";
+import { RecentTimeLogsWrapper } from "@/components/recent-time-logs-wrapper";
 
 function formatDuration(hours: number) {
   const totalSeconds = Math.floor(hours * 3600);
@@ -226,17 +226,7 @@ export default async function DashboardPage() {
 
         {/* Add Recent Timelogs section */}
         <div>
-          <RecentTimeLogs 
-            logs={recentLogs} 
-            onEdit={async (log) => {
-              'use server';
-              const response = await fetch('/api/time-logs/' + log._id, {
-                method: 'PATCH',
-                body: JSON.stringify(log)
-              });
-              if (!response.ok) throw new Error('Failed to update time log');
-            }}
-          />
+          <RecentTimeLogsWrapper logs={recentLogs} />
         </div>
       </div>
     );

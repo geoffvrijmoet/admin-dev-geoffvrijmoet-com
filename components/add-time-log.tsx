@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -13,8 +13,8 @@ import { InsertOneResult } from 'mongodb';
 import { TimeLog } from '@/lib/time-logs';
 
 interface AddTimeLogProps {
-  projects: Array<{ client: string; name: string; rate?: number; rateType?: string; }>;
   onAddLog: (data: {
+    client: string;
     project: string;
     hours: number;
     startTime: string;
@@ -23,36 +23,15 @@ interface AddTimeLogProps {
   }) => Promise<{ success: boolean; data: InsertOneResult<TimeLog> }>;
 }
 
-export function AddTimeLog({ onAddLog }: Omit<AddTimeLogProps, 'projects'>) {
+export function AddTimeLog({ onAddLog }: AddTimeLogProps) {
   const [open, setOpen] = useState(false);
-  const [projects, setProjects] = useState<Array<{ client: string; name: string; rate?: number; rateType?: string; }>>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [client, setClient] = useState("");
+  const [project, setProject] = useState("");
   const [date, setDate] = useState<Date>(new Date());
-  const [selectedProject, setSelectedProject] = useState("");
   const [hours, setHours] = useState(0);
   const [minutes, setMinutes] = useState(0);
   const [seconds, setSeconds] = useState(0);
   const [description, setDescription] = useState("");
-
-  useEffect(() => {
-    async function fetchProjects() {
-      try {
-        const response = await fetch('/api/projects');
-        if (!response.ok) throw new Error('Failed to fetch projects');
-        const data = await response.json();
-        console.log('Fetched projects:', data);
-        setProjects(data.projects);
-      } catch (error) {
-        console.error('Error fetching projects:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    if (open) {
-      fetchProjects();
-    }
-  }, [open]);
 
   const handleSubmit = async () => {
     const totalHours = hours + (minutes / 60) + (seconds / 3600);
@@ -63,7 +42,8 @@ export function AddTimeLog({ onAddLog }: Omit<AddTimeLogProps, 'projects'>) {
     endTime.setSeconds(endTime.getSeconds() + seconds);
 
     await onAddLog({
-      project: selectedProject,
+      client,
+      project,
       hours: totalHours,
       startTime: startTime.toISOString(),
       endTime: endTime.toISOString(),
@@ -75,8 +55,9 @@ export function AddTimeLog({ onAddLog }: Omit<AddTimeLogProps, 'projects'>) {
   };
 
   const resetForm = () => {
+    setClient("");
+    setProject("");
     setDate(new Date());
-    setSelectedProject("");
     setHours(0);
     setMinutes(0);
     setSeconds(0);
@@ -97,26 +78,21 @@ export function AddTimeLog({ onAddLog }: Omit<AddTimeLogProps, 'projects'>) {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Project</label>
-              <Select 
-                value={selectedProject} 
-                onValueChange={setSelectedProject}
-                disabled={isLoading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={isLoading ? "Loading projects..." : "Select a project"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map((project) => (
-                    <SelectItem key={`${project.client}-${project.name}`} value={project.name}>
-                      <div className="flex flex-col">
-                        <span>{project.name}</span>
-                        <span className="text-xs text-muted-foreground">{project.client}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <label className="text-sm font-medium">Client Name</label>
+              <Input
+                value={client}
+                onChange={(e) => setClient(e.target.value)}
+                placeholder="Enter client name"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Project Name</label>
+              <Input
+                value={project}
+                onChange={(e) => setProject(e.target.value)}
+                placeholder="Enter project name"
+              />
             </div>
 
             <div className="space-y-2">
@@ -186,7 +162,7 @@ export function AddTimeLog({ onAddLog }: Omit<AddTimeLogProps, 'projects'>) {
             <Button 
               className="w-full" 
               onClick={handleSubmit}
-              disabled={!selectedProject || (hours === 0 && minutes === 0 && seconds === 0)}
+              disabled={!client || !project || (hours === 0 && minutes === 0 && seconds === 0)}
             >
               Add Time Log
             </Button>
