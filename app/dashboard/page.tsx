@@ -4,6 +4,7 @@ import { Clock, DollarSign, FileText, Wallet, TrendingUp } from "lucide-react";
 import { getProjectStats } from "@/lib/time-logs";
 import { getRecentLogs, updateTimeLog } from "@/app/time-tracking/actions";
 import { RecentTimeLogs } from "@/components/recent-time-logs";
+import { AddProjectButton } from "@/components/add-project-button";
 
 function formatDuration(hours: number) {
   const totalSeconds = Math.floor(hours * 3600);
@@ -68,11 +69,14 @@ export default async function DashboardPage() {
 
     return (
       <div className="space-y-8">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-          <p className="text-muted-foreground">
-            Overview of your freelance business
-          </p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+            <p className="text-muted-foreground">
+              Overview of your freelance business
+            </p>
+          </div>
+          <AddProjectButton />
         </div>
 
         {/* Monthly Stats */}

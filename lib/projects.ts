@@ -1,8 +1,11 @@
 import clientPromise from './mongodb';
+import { ObjectId } from 'mongodb';
 
 export interface Project {
-  name: string;
+  _id?: ObjectId;
   client: string;
+  project: string;
+  name: string;
   rate?: number;
   rateType?: string;
   createdAt: Date;
