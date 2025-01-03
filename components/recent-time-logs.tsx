@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Pencil } from "lucide-react";
 import { EditTimeLogDialog } from "./edit-time-log-dialog";
+import Link from "next/link";
 
 interface RecentTimeLogsProps {
   logs: TimeLog[];
@@ -33,7 +34,11 @@ export function RecentTimeLogs({ logs, onEdit }: RecentTimeLogsProps) {
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Recent Timelogs</CardTitle>
+          <Link href="/time-tracking">
+            <CardTitle className="hover:text-blue-500 transition-colors cursor-pointer">
+              Timelogs
+            </CardTitle>
+          </Link>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -53,7 +58,7 @@ export function RecentTimeLogs({ logs, onEdit }: RecentTimeLogsProps) {
                       {log.hours.toFixed(2)} hrs ({formatDuration(log.hours)})
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      ${log.rate}/hr
+                      {log.rate === -1 ? 'Fixed Rate' : `$${log.rate}/hr`}
                     </p>
                   </div>
                   <Button 

@@ -7,10 +7,12 @@ import { Badge } from "../components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Download, Eye } from "lucide-react";
 import { Invoice } from "@/lib/invoices";
+import { ViewInvoiceDialog } from "./view-invoice-dialog";
 
 export function InvoiceList() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
 
   useEffect(() => {
     async function fetchInvoices() {
@@ -69,66 +71,80 @@ export function InvoiceList() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>All Invoices</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Invoice</TableHead>
-              <TableHead>Client</TableHead>
-              <TableHead>Amount</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {invoices.length === 0 ? (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>All Invoices</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">
-                  No invoices found
-                </TableCell>
+                <TableHead>Invoice</TableHead>
+                <TableHead>Client</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
-            ) : (
-              invoices.map((invoice) => (
-                <TableRow key={invoice._id?.toString()}>
-                  <TableCell>{invoice.number}</TableCell>
-                  <TableCell>{invoice.client}</TableCell>
-                  <TableCell>${invoice.total.toLocaleString()}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        invoice.status === 'paid' ? 'success' :
-                        invoice.status === 'pending' ? 'warning' : 'destructive'
-                      }
-                    >
-                      {invoice.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{new Date(invoice.date).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button variant="ghost" size="sm">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => handleDownload(invoice._id!.toString())}
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    </div>
+            </TableHeader>
+            <TableBody>
+              {invoices.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    No invoices found
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+              ) : (
+                invoices.map((invoice) => (
+                  <TableRow 
+                    key={invoice._id?.toString()}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => setSelectedInvoice(invoice)}
+                  >
+                    <TableCell>{invoice.number}</TableCell>
+                    <TableCell>{invoice.client}</TableCell>
+                    <TableCell>${invoice.total.toLocaleString()}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          invoice.status === 'paid' ? 'success' :
+                          invoice.status === 'pending' ? 'warning' : 'destructive'
+                        }
+                      >
+                        {invoice.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{new Date(invoice.date).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button variant="ghost" size="sm">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleDownload(invoice._id!.toString())}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {selectedInvoice && (
+        <ViewInvoiceDialog
+          invoice={selectedInvoice}
+          open={!!selectedInvoice}
+          onOpenChange={(open) => !open && setSelectedInvoice(null)}
+        />
+      )}
+    </>
   );
 } 

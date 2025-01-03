@@ -35,7 +35,7 @@ export async function updateProject(name: string, data: Partial<Project>) {
   const projects = client.db().collection<Project>('projects');
   
   return projects.updateOne(
-    { name },
+    { project: name },
     { 
       $set: { 
         ...data,
