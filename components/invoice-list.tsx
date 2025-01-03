@@ -104,7 +104,7 @@ export function InvoiceList() {
                   >
                     <TableCell>{invoice.number}</TableCell>
                     <TableCell>{invoice.client}</TableCell>
-                    <TableCell>${invoice.total.toLocaleString()}</TableCell>
+                    <TableCell>${invoice.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                     <TableCell>
                       <Badge
                         variant={

@@ -14,10 +14,11 @@ export interface Invoice {
     rate: number;
     amount: number;
   }[];
-  timeLogs: ObjectId[];
+  timeLogs: ObjectId[] | string[];
   subtotal: number;
   total: number;
   status: 'draft' | 'pending' | 'paid';
+  rateType: 'hourly' | 'fixed';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -66,6 +67,7 @@ export async function createInvoice(data: {
     subtotal,
     total: subtotal, // Add tax calculation if needed
     status: 'pending',
+    rateType: 'hourly',
     createdAt: new Date(),
     updatedAt: new Date()
   };
