@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { addTimeLog, getUnbilledTimeLogs } from '@/lib/time-logs';
+import { fromEasternTime } from '@/lib/date-utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,15 +15,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const startTime = fromEasternTime(new Date(body.startTime));
+    const endTime = fromEasternTime(new Date(body.endTime));
+
     const result = await addTimeLog({
       project: body.project,
       client: body.client,
-      startTime: new Date(body.startTime),
-      endTime: new Date(body.endTime),
+      startTime,
+      endTime,
       hours: body.hours,
       description: body.description,
-      rate: 0,
-      rateType: 'hourly'
+      rate: body.rate || 0,
+      rateType: body.rateType || 'hourly'
     });
     
     console.log('Time log saved:', result);

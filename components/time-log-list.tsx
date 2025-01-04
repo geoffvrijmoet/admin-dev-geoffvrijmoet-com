@@ -59,7 +59,7 @@ export function TimeLogList({ logs, onDelete, onEdit, onUpdateRate }: TimeLogLis
                     <span>
                       {log.hours.toFixed(2)} hours ({formatDuration(log.hours)})
                     </span>
-                    <span>{formatDistanceToNow(log.startTime)} ago</span>
+                    <span>{formatDistanceToNow(log.endTime)} ago</span>
                   </div>
                 </div>
                 <div className="flex gap-2">

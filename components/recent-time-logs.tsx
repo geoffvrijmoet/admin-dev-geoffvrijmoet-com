@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Pencil } from "lucide-react";
 import { EditTimeLogDialog } from "./edit-time-log-dialog";
 import Link from "next/link";
+import { toEasternTime } from '@/lib/date-utils';
 
 interface RecentTimeLogsProps {
   logs: TimeLog[];

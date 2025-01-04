@@ -5,6 +5,7 @@ import { TimeLog } from "@/lib/time-logs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toEasternTime, fromEasternTime } from '@/lib/date-utils';
 
 interface EditTimeLogDialogProps {
   log: TimeLog;
@@ -32,11 +33,16 @@ export function EditTimeLogDialog({ log, open, onOpenChange, onSave }: EditTimeL
         (formData.minutes / 60) + 
         (formData.seconds / 3600);
 
+      const startTime = new Date(log.startTime);
+      const endTime = new Date(startTime);
+      endTime.setHours(endTime.getHours() + formData.hours);
+      endTime.setMinutes(endTime.getMinutes() + formData.minutes);
+      endTime.setSeconds(endTime.getSeconds() + formData.seconds);
+
       await onSave({
         ...log,
-        client: formData.client,
-        project: formData.project,
-        rate: formData.rate,
+        startTime: fromEasternTime(startTime),
+        endTime: fromEasternTime(endTime),
         hours: totalHours
       });
       onOpenChange(false);

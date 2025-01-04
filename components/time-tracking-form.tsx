@@ -9,6 +9,8 @@ import { Clock, Play, Square } from "lucide-react";
 interface Project {
   name: string;
   client: string;
+  rate?: number;
+  rateType?: string;
 }
 
 interface TimeTrackingFormProps {
@@ -19,6 +21,8 @@ interface TimeTrackingFormProps {
     startTime: string;
     endTime: string;
     description?: string;
+    rate: number;
+    rateType: 'hourly' | 'fixed';
   }) => void;
 }
 
@@ -84,12 +88,22 @@ export function TimeTrackingForm({ projects, onLogTime }: TimeTrackingFormProps)
       const endTime = new Date();
       const hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
 
+      // Find the project data
+      const projectData = projects.find(p => p.name === selectedProject);
+      if (!projectData) {
+        console.error('Project data not found');
+        return;
+      }
+
       try {
         await onLogTime({ 
           project: selectedProject, 
           hours,
           startTime: startTime?.toISOString(),
-          endTime: endTime.toISOString()
+          endTime: endTime.toISOString(),
+          description,
+          rate: projectData.rate || 0,
+          rateType: (projectData.rateType as 'hourly' | 'fixed') || 'hourly'
         });
 
         // Update offline entry as synced
@@ -117,11 +131,22 @@ export function TimeTrackingForm({ projects, onLogTime }: TimeTrackingFormProps)
       for (const entry of unsyncedEntries) {
         try {
           const hours = (new Date(entry.endTime!).getTime() - new Date(entry.startTime).getTime()) / (1000 * 60 * 60);
+          
+          // Find the project data
+          const projectData = projects.find(p => p.name === entry.project);
+          if (!projectData) {
+            console.error('Project data not found');
+            continue;
+          }
+
           await onLogTime({
             project: entry.project,
             hours,
             startTime: entry.startTime,
-            endTime: entry.endTime!
+            endTime: entry.endTime!,
+            description: entry.description,
+            rate: projectData.rate || 0,
+            rateType: (projectData.rateType as 'hourly' | 'fixed') || 'hourly'
           });
           
           // Mark as synced
@@ -138,7 +163,7 @@ export function TimeTrackingForm({ projects, onLogTime }: TimeTrackingFormProps)
 
     window.addEventListener('online', syncOfflineEntries);
     return () => window.removeEventListener('online', syncOfflineEntries);
-  }, [offlineEntries, onLogTime]);
+  }, [offlineEntries, onLogTime, projects]);
 
   return (
     <div className="space-y-4 p-4 border rounded-lg">
@@ -152,7 +177,9 @@ export function TimeTrackingForm({ projects, onLogTime }: TimeTrackingFormProps)
               <SelectItem key={project.name} value={project.name}>
                 <div className="flex flex-col">
                   <span>{project.name}</span>
-                  <span className="text-xs text-muted-foreground">{project.client}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {project.client} • {project.rateType === 'hourly' ? `$${project.rate}/hr` : 'Fixed Rate'}
+                  </span>
                 </div>
               </SelectItem>
             ))}

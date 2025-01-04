@@ -3,6 +3,7 @@
 import { addTimeLog, TimeLog } from '@/lib/time-logs';
 import clientPromise from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
+import { fromEasternTime } from '@/lib/date-utils';
 
 export async function logTime(data: { 
   project: string; 
@@ -10,17 +11,19 @@ export async function logTime(data: {
   startTime: string;
   endTime: string;
   description?: string;
+  rate: number;
+  rateType: 'hourly' | 'fixed';
 }) {
   try {
     const timeLogResult = await addTimeLog({
       project: data.project,
       client: data.project.split(' - ')[0],
-      startTime: new Date(data.startTime),
-      endTime: new Date(data.endTime),
+      startTime: fromEasternTime(new Date(data.startTime)),
+      endTime: fromEasternTime(new Date(data.endTime)),
       hours: data.hours,
       description: data.description,
-      rate: 0,
-      rateType: 'hourly'
+      rate: data.rate,
+      rateType: data.rateType
     });
     
     return { success: true, data: timeLogResult };
@@ -39,7 +42,7 @@ export async function getRecentLogs() {
     
     const logs = await timeLogs
       .find({})
-      .sort({ startTime: -1 })
+      .sort({ endTime: -1 })
       .limit(10)
       .toArray();
       

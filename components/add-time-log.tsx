@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { Calendar as CalendarIcon, Plus } from "lucide-react";
 import { InsertOneResult } from 'mongodb';
 import { TimeLog } from '@/lib/time-logs';
+import { fromEasternTime } from '@/lib/date-utils';
 
 interface AddTimeLogProps {
   onAddLog: (data: {
@@ -19,6 +20,8 @@ interface AddTimeLogProps {
     startTime: string;
     endTime: string;
     description?: string;
+    rate: number;
+    rateType: 'hourly' | 'fixed';
   }) => Promise<{ success: boolean; data: InsertOneResult<TimeLog> }>;
 }
 
@@ -44,9 +47,11 @@ export function AddTimeLog({ onAddLog }: AddTimeLogProps) {
       client,
       project,
       hours: totalHours,
-      startTime: startTime.toISOString(),
-      endTime: endTime.toISOString(),
-      description
+      startTime: fromEasternTime(startTime).toISOString(),
+      endTime: fromEasternTime(endTime).toISOString(),
+      description,
+      rate: 0,
+      rateType: 'hourly'
     });
 
     setOpen(false);

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
 import { useState } from "react";
 import { EditInvoiceDialog } from "./edit-invoice-dialog";
+import { toEasternTime } from '@/lib/date-utils';
 
 interface ViewInvoiceDialogProps {
   invoice: Invoice;
@@ -50,7 +51,7 @@ export function ViewInvoiceDialog({ invoice, open, onOpenChange }: ViewInvoiceDi
               </div>
               <div className="text-right">
                 <p className="text-sm font-medium text-muted-foreground">Date</p>
-                <p className="text-lg">{format(new Date(invoice.date), 'PPP')}</p>
+                <p className="text-lg">{format(toEasternTime(new Date(invoice.date)), 'PPP')}</p>
               </div>
             </div>
 
