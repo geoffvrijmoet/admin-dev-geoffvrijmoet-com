@@ -5,7 +5,7 @@ import { TimeLog } from "@/lib/time-logs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { toEasternTime, fromEasternTime } from '@/lib/date-utils';
+import { fromEasternTime } from '@/lib/date-utils';
 
 interface EditTimeLogDialogProps {
   log: TimeLog;
