@@ -1,19 +1,19 @@
 import { DashboardContent } from "@/components/dashboard-content";
-import { getProjectStats } from "@/lib/time-logs";
+import { getDashboardStats } from "@/lib/time-logs";
 import { getRecentLogs } from "@/app/time-tracking/actions";
 import { getInvoices } from "@/lib/invoices";
 import { getProjects } from "@/lib/projects";
 
 export default async function DashboardPage() {
-  const [stats, recentLogs, invoices, projects] = await Promise.all([
-    getProjectStats(),
+  const [dashboardStats, recentLogs, invoices, projects] = await Promise.all([
+    getDashboardStats(),
     getRecentLogs(),
     getInvoices(),
     getProjects()
   ]);
 
   return <DashboardContent 
-    stats={stats} 
+    stats={dashboardStats} 
     recentLogs={recentLogs} 
     invoices={invoices}
     projects={projects}

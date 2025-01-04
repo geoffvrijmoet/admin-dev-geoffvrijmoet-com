@@ -129,4 +129,59 @@ export async function getProjectStats() {
     averageRate: item.avgRate || 0,
     potentialInvoice: item.potentialInvoice || 0
   }));
+}
+
+export async function getDashboardStats() {
+  const client = await clientPromise;
+  const timeLogs = client.db().collection<TimeLog>('time_logs');
+  const invoices = client.db().collection('invoices');
+
+  // Get total hours from all time logs
+  const timeLogStats = await timeLogs.aggregate([
+    {
+      $group: {
+        _id: null,
+        totalHours: { $sum: "$hours" }
+      }
+    }
+  ]).toArray();
+
+  // Get total paid and outstanding from invoices
+  const invoiceStats = await invoices.aggregate([
+    {
+      $group: {
+        _id: null,
+        totalPaid: {
+          $sum: {
+            $cond: [
+              { $eq: ["$status", "paid"] },
+              "$total",
+              0
+            ]
+          }
+        },
+        totalOutstanding: {
+          $sum: {
+            $cond: [
+              { $ne: ["$status", "paid"] },
+              "$total",
+              0
+            ]
+          }
+        }
+      }
+    }
+  ]).toArray();
+
+  const totalHours = timeLogStats[0]?.totalHours || 0;
+  const totalIncome = (invoiceStats[0]?.totalPaid || 0) + (invoiceStats[0]?.totalOutstanding || 0);
+  
+  const stats = {
+    totalHours,
+    averageHourlyRate: totalHours > 0 ? totalIncome / totalHours : 0,
+    totalPaid: invoiceStats[0]?.totalPaid || 0,
+    totalOutstanding: invoiceStats[0]?.totalOutstanding || 0
+  };
+
+  return stats;
 } 
