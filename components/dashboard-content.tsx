@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, DollarSign, FileText, Wallet, TrendingUp } from "lucide-react";
+import { Clock, DollarSign, Wallet, TrendingUp } from "lucide-react";
 import { AddProjectButton } from "@/components/add-project-button";
 import { RecentTimeLogsWrapper } from "@/components/recent-time-logs-wrapper";
 import { TimeLog } from "@/lib/time-logs";
