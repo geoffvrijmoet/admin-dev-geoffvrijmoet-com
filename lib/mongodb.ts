@@ -1,25 +1,21 @@
 import { MongoClient } from 'mongodb';
 
 if (!process.env.MONGODB_URI) {
-  throw new Error('Please add your Mongo URI to .env.local');
+  throw new Error('Missing MONGODB_URI environment variable');
 }
 
 const uri = process.env.MONGODB_URI;
-const options = {
-  maxPoolSize: 10,
-  serverSelectionTimeoutMS: 5000,
-  socketTimeoutMS: 45000,
-};
+const options = {};
 
-let client: MongoClient | undefined;
+let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
 
 if (process.env.NODE_ENV === 'development') {
   // In development mode, use a global variable so that the value
   // is preserved across module reloads caused by HMR (Hot Module Replacement).
   const globalWithMongo = global as typeof globalThis & {
-    _mongoClientPromise?: Promise<MongoClient>
-  }
+    _mongoClientPromise?: Promise<MongoClient>;
+  };
 
   if (!globalWithMongo._mongoClientPromise) {
     client = new MongoClient(uri, options);
@@ -27,26 +23,13 @@ if (process.env.NODE_ENV === 'development') {
   }
   clientPromise = globalWithMongo._mongoClientPromise;
 } else {
-  // In production mode, create a new client for each connection
+  // In production mode, it's best to not use a global variable.
   client = new MongoClient(uri, options);
   clientPromise = client.connect();
 }
 
-// Add error handling
-clientPromise.catch(error => {
-  console.error('MongoDB connection error:', error);
-  throw error;
-});
-
-export default clientPromise;
-
-// Add a helper function to safely get a database connection
-export async function getDb() {
-  try {
-    const client = await clientPromise;
-    return client.db();
-  } catch (error) {
-    console.error('Failed to get database connection:', error);
-    throw error;
-  }
+export async function getCollection(collectionName: string) {
+  const client = await clientPromise;
+  const db = client.db();
+  return db.collection(collectionName);
 } 
