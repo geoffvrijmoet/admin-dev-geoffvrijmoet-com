@@ -125,6 +125,9 @@ export default function HomePage() {
                 <p className="text-sm font-medium">
                   {project.rateType === 'hourly' ? 'Earnings' : 'Fixed Rate'}: ${project.totalEarnings?.toFixed(2) || '0.00'}
                 </p>
+                <p className="italic opacity-[0.65]">
+                  ${((project.rate ?? 0) / (project.totalHours ? Number(project.totalHours.toFixed(2)) : 1)).toFixed(2)}/hr
+                </p>
                 
                 <TimeLogDialog project={project} onTimeLogCreated={fetchProjects} />
               </div>

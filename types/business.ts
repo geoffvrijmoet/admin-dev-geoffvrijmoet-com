@@ -39,5 +39,5 @@ export type Project = {
   updatedAt: Date;
   totalHours?: number;
   totalEarnings?: number;
-  [key: string]: any; // Allow dynamic fields
+  [key: string]: unknown; // Allow dynamic fields
 }; 

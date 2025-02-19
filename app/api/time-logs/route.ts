@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCollection } from '@/lib/mongodb';
-import { TimeLog } from '@/types/business';
 
 export async function POST(req: NextRequest) {
   try {
