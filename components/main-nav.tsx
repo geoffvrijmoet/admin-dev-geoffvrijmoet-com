@@ -23,7 +23,7 @@ export function MainNav({ className }: { className?: string }) {
             "text-sm font-medium transition-colors hover:text-primary",
             pathname === item.href
               ? "text-primary"
-              : "text-muted-foreground"
+              : "text-nav-foreground"
           )}
         >
           {item.label}

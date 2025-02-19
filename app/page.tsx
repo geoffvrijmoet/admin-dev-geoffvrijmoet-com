@@ -1,85 +1,151 @@
 'use client';
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Clock, Users } from "lucide-react";
+import { Project } from "@/types/business";
+import { InlineEdit } from "@/components/ui/inline-edit";
+import { ProjectCustomField } from "@/components/project-custom-field";
+import { NewProjectDialog } from "@/components/new-project-dialog";
+import { TimeLogDialog } from "@/components/time-log-dialog";
 
 export default function HomePage() {
-  const [stats, setStats] = useState({
-    metric1: 42,
-    metric2: 128,
-    metric3: 24.5,
-    metric4: 8
-  });
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/projects");
+      if (!res.ok) throw new Error("Failed to load projects");
+      const data = await res.json();
+      setProjects(data);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("An unknown error occurred");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateProject = async (projectId: string, field: string, value: string | number) => {
+    try {
+      const res = await fetch(`/api/projects/${projectId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: value })
+      });
+
+      if (!res.ok) throw new Error("Failed to update project");
+      await fetchProjects();
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Failed to update project");
+      }
+    }
+  };
+
+  const addCustomField = async (projectId: string, fieldName: string, value: string) => {
+    await updateProject(projectId, fieldName, value);
+  };
+
+  const renderCustomFields = (project: Project) => {
+    const standardFields = ['_id', 'client', 'project', 'rate', 'rateType', 'createdAt', 'updatedAt', 'totalHours', 'totalEarnings'];
+    const customFields = Object.entries(project).filter(([key]) => !standardFields.includes(key));
+
+    return customFields.map(([key, value]) => (
+      <p key={key} className="text-sm">
+        <span className="text-muted-foreground">{key}: </span>
+        <InlineEdit
+          value={value}
+          onSave={async (newValue) => updateProject(project._id, key, newValue)}
+        />
+      </p>
+    ));
+  };
+
 
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-bold">Dashboard</h1>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Metric 1</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.metric1}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Metric 2</CardTitle>
-            <BarChart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.metric2}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Metric 3</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.metric3}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Metric 4</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.metric4}</div>
-          </CardContent>
-        </Card>
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Projects</h1>
+        <NewProjectDialog onProjectCreated={fetchProjects} />
       </div>
+      
+      {loading && <p>Loading projects...</p>}
+      {error && <p className="text-red-500">{error}</p>}
+      
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {projects.map((project) => (
+          <Card key={project._id}>
+            <CardHeader>
+              <CardTitle>
+                <InlineEdit
+                  value={project.projectName}
+                  onSave={async (value) => updateProject(project._id, 'projectName', value)}
+                />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Client:{' '}
+                <InlineEdit
+                  value={project.client}
+                  onSave={async (value) => updateProject(project._id, 'client', value)}
+                />
+              </p>
+              <p className="text-sm">
+                Rate: $
+                <InlineEdit
+                  value={project.rate}
+                  type="number"
+                  onSave={async (value) => updateProject(project._id, 'rate', value)}
+                />{' '}
+                <InlineEdit
+                  value={project.rateType}
+                  onSave={async (value) => updateProject(project._id, 'rateType', value)}
+                />
+              </p>
+              
+              {/* Time and Earnings Information */}
+              <div className="bg-muted/50 p-3 rounded-lg space-y-2">
+                
+                <p className="text-sm font-medium">
+                  Total Hours: {project.totalHours?.toFixed(2) || '0.00'}
+                </p>
+                <p className="text-sm font-medium">
+                  {project.rateType === 'hourly' ? 'Earnings' : 'Fixed Rate'}: ${project.totalEarnings?.toFixed(2) || '0.00'}
+                </p>
+                
+                <TimeLogDialog project={project} onTimeLogCreated={fetchProjects} />
+              </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle>Overview</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              No data available.
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle>Summary</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              No data available.
-            </p>
-          </CardContent>
-        </Card>
+              <p className="text-xs text-muted-foreground">
+                Created: {new Date(project.createdAt).toLocaleDateString()}
+              </p>
+              
+              {/* Custom Fields */}
+              <div className="pt-2 border-t">
+                <h4 className="text-sm font-medium mb-2">Custom Fields</h4>
+                {renderCustomFields(project)}
+              </div>
+              
+              {/* Add Custom Field */}
+              <ProjectCustomField
+                onAdd={async (fieldName, value) => addCustomField(project._id, fieldName, value)}
+              />
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );
