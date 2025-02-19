@@ -65,9 +65,9 @@ export default function HomePage() {
     return customFields.map(([key, value]) => (
       <p key={key} className="text-sm">
         <span className="text-muted-foreground">{key}: </span>
-        <InlineEdit
-          value={value}
-          onSave={async (newValue) => updateProject(project._id, key, newValue)}
+        <InlineEdit 
+          value={value instanceof Date ? value.toISOString() : value} 
+          onSave={async (newValue) => updateProject(project._id, key, newValue)} 
         />
       </p>
     ));

@@ -29,15 +29,19 @@ export type TimeLog = {
   updatedAt: Date;
 };
 
-export type Project = {
+type BaseProject = {
   _id: string;
   client: string;
   project: string;
+  projectName: string;
   rate: number;
   rateType: 'hourly' | 'fixed';
   createdAt: Date;
   updatedAt: Date;
   totalHours?: number;
   totalEarnings?: number;
-  [key: string]: unknown; // Allow dynamic fields
+};
+
+export type Project = BaseProject & {
+  [key: string]: string | number;
 }; 
