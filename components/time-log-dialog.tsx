@@ -79,6 +79,7 @@ export function TimeLogDialog({ project, onTimeLogCreated }: TimeLogDialogProps)
                 min="0"
                 value={formData.hours}
                 onChange={(e) => setFormData({ ...formData, hours: Number(e.target.value) })}
+                onFocus={(e) => e.target.select()}
                 required
               />
             </div>
@@ -91,6 +92,7 @@ export function TimeLogDialog({ project, onTimeLogCreated }: TimeLogDialogProps)
                 max="59"
                 value={formData.minutes}
                 onChange={(e) => setFormData({ ...formData, minutes: Number(e.target.value) })}
+                onFocus={(e) => e.target.select()}
                 required
               />
             </div>
@@ -103,6 +105,7 @@ export function TimeLogDialog({ project, onTimeLogCreated }: TimeLogDialogProps)
                 max="59"
                 value={formData.seconds}
                 onChange={(e) => setFormData({ ...formData, seconds: Number(e.target.value) })}
+                onFocus={(e) => e.target.select()}
                 required
               />
             </div>
